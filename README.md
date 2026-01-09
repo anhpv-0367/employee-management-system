@@ -54,7 +54,7 @@ curl -i -X POST http://localhost:8080/employees \
   -d '{
     "name": "Nguyen Van A",
     "email": "a@example.com",
-    "department_id": 1
+    "departmentId": 1
   }'
 ```
 
@@ -62,4 +62,10 @@ curl -i -X POST http://localhost:8080/employees \
 
 ```
 curl -i http://localhost:8080/employees/1
+```
+
+- GET /employees
+
+```
+curl --location 'http://localhost:8080/employees?limit=1&offset=2&departmentId=1'
 ```

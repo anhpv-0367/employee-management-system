@@ -54,6 +54,76 @@ func NewEmployeeHandler(service *services.EmployeeService) *EmployeeHandler {
 	}
 }
 
+func (h *EmployeeHandler) ListEmployees(w http.ResponseWriter, r *http.Request) {
+	log.Println("ListEmployees handler called")
+
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	// parse query params
+	q := r.URL.Query()
+	limit := 10
+	offset := 0
+	if l := q.Get("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 {
+			limit = v
+		}
+	}
+	if o := q.Get("offset"); o != "" {
+		if v, err := strconv.Atoi(o); err == nil && v >= 0 {
+			offset = v
+		}
+	}
+
+	var deptID *int64
+	if d := q.Get("departmentId"); d != "" {
+		if v, err := strconv.ParseInt(d, 10, 64); err == nil {
+			deptID = &v
+		} else {
+			writeError(w, http.StatusBadRequest, "invalid departmentId")
+			return
+		}
+	}
+
+	var keyword *string
+	if k := q.Get("keyword"); k != "" {
+		keyword = &k
+	}
+
+	employees, total, err := h.service.List(r.Context(), limit, offset, deptID, keyword)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	var out []EmployeeResponse
+	for _, e := range employees {
+		out = append(out, EmployeeResponse{
+			ID:           e.ID,
+			Name:         e.Name,
+			Age:          derefInt(e.Age),
+			Position:     derefString(e.Position),
+			DepartmentID: e.DepartmentID,
+			Salary:       derefFloat(e.Salary),
+			CreatedAt:    e.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:    e.UpdatedAt.Format(time.RFC3339),
+		})
+	}
+
+	resp := struct {
+		TotalCount int64             `json:"totalCount"`
+		Employees  []EmployeeResponse `json:"employees"`
+	}{
+		TotalCount: total,
+		Employees:  out,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
 func (h *EmployeeHandler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
   log.Println("CreateEmployee handler called")
 

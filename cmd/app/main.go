@@ -23,12 +23,13 @@ func main() {
 	log.Println("Database connection established successfully")
 
 	repo := repositories.NewEmployeeRepository(db)
-	employeeService := services.NewEmployeeService(repo)
-	employeeHandler := handlers.NewEmployeeHandler(employeeService)
 
-  deptRepo := repositories.NewDepartmentRepository(db)
-  deptService := services.NewDepartmentService(deptRepo)
-  deptHandler := handlers.NewDepartmentHandler(deptService)
+	deptRepo := repositories.NewDepartmentRepository(db)
+	deptService := services.NewDepartmentService(deptRepo)
+	deptHandler := handlers.NewDepartmentHandler(deptService)
+
+	employeeService := services.NewEmployeeService(repo, deptRepo)
+	employeeHandler := handlers.NewEmployeeHandler(employeeService)
 
 
 	mux := http.NewServeMux()
@@ -40,8 +41,18 @@ func main() {
 	// POST /departments
 	mux.HandleFunc("/departments", deptHandler.CreateDepartment)
 
-	// POST /employees
-	mux.HandleFunc("/employees", employeeHandler.CreateEmployee)
+	// /employees: GET=list, POST=create
+	mux.HandleFunc("/employees", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			employeeHandler.ListEmployees(w, r)
+			return
+		}
+		if r.Method == http.MethodPost {
+			employeeHandler.CreateEmployee(w, r)
+			return
+		}
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	})
 
 	// GET /employees/{id}
 	mux.HandleFunc("/employees/", employeeHandler.GetByID)
