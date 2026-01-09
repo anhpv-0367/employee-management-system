@@ -7,6 +7,9 @@ type Employee struct {
 	Name         string
 	Email        *string
 	DepartmentID int64
+	Age          *int
+	Position     *string
+	Salary      *float64
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

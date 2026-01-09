@@ -25,3 +25,41 @@ docker run --rm \
   -database "$DATABASE_URL" \
   up
 ```
+
+#### check db:
+
+```
+docker compose exec db psql -U postgres -d employee_db
+
+\dt
+```
+
+### CURL Example
+
+- Create department:
+
+```
+curl -i -X POST http://localhost:8080/departments \   
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "IT"
+  }'
+```
+
+- Create employee:
+
+```
+curl -i -X POST http://localhost:8080/employees \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Nguyen Van A",
+    "email": "a@example.com",
+    "department_id": 1
+  }'
+```
+
+- Get Employee Detail
+
+```
+curl -i http://localhost:8080/employees/1
+```
