@@ -24,7 +24,7 @@ func (h *DepartmentHandler) CreateDepartment(w http.ResponseWriter, r *http.Requ
 	log.Println("CreateDepartment handler called")
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeError(w, http.StatusBadRequest, "method not allowed")
 		return
 	}
 
@@ -33,12 +33,12 @@ func (h *DepartmentHandler) CreateDepartment(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	if strings.TrimSpace(req.Name) == "" {
-		http.Error(w, "name is required", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
 

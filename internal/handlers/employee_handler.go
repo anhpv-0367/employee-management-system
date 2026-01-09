@@ -58,7 +58,7 @@ func (h *EmployeeHandler) CreateEmployee(w http.ResponseWriter, r *http.Request)
   log.Println("CreateEmployee handler called")
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *EmployeeHandler) CreateEmployee(w http.ResponseWriter, r *http.Request)
   }
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *EmployeeHandler) CreateEmployee(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.service.CreateEmployee(r.Context(), employee); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+    writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -108,19 +108,19 @@ func (h *EmployeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	idStr := strings.TrimPrefix(r.URL.Path, prefix)
 	if idStr == "" {
-		http.Error(w, "missing id", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "missing id")
 		return
 	}
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
 
 	employee, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "employee not found", http.StatusNotFound)
+    writeError(w, http.StatusNotFound, "employee not found")
 		return
 	}
 
