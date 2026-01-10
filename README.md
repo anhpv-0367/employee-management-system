@@ -116,3 +116,9 @@ curl --location --request DELETE 'http://localhost:8080/employees/12' \
 ```
 curl --location 'http://localhost:8080/departments?limit=1&offset=0'
 ```
+
+- GET /departments/:id/employees (reuse GET /employees)
+
+```
+curl --location 'http://localhost:8080/departments/1/employees?keyword=Van'
+```

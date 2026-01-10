@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	_ "github.com/lib/pq"
 
@@ -62,6 +63,31 @@ func main() {
 			return
 		}
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	})
+
+	// GET /departments/{id}/employees -> reuse employeeHandler.ListEmployees with departmentId injected
+	mux.HandleFunc("/departments/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+		if !strings.HasSuffix(r.URL.Path, "/employees") {
+			http.NotFound(w, r)
+			return
+		}
+
+		prefix := "/departments/"
+		p := strings.TrimPrefix(r.URL.Path, prefix)
+		parts := strings.SplitN(p, "/", 2)
+		if len(parts) < 2 || parts[1] != "employees" {
+			http.NotFound(w, r)
+			return
+		}
+		idStr := parts[0]
+		q := r.URL.Query()
+		q.Set("departmentId", idStr)
+		r.URL.RawQuery = q.Encode()
+		employeeHandler.ListEmployees(w, r)
 	})
 
 	// /employees/{id}: GET, PUT, DELETE
