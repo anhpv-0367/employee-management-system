@@ -69,3 +69,30 @@ curl -i http://localhost:8080/employees/1
 ```
 curl --location 'http://localhost:8080/employees?limit=1&offset=2&departmentId=1'
 ```
+
+- PUT /employees/:id
+
+```
+curl --location --request PUT 'http://localhost:8080/employees/11' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "position": "Leaderx",
+    "age": 12,
+    "salary": 12.3,
+    "name": "Nguyen van fix",
+    "email": "D@example.com",
+    "DepartmentID": 1
+  }'
+```
+
+- GET /employees/:id
+
+```
+curl --location --request DELETE 'http://localhost:8080/employees/12' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "Nguyen Van B",
+    "email": "b@example.com",
+    "department_id": 1
+  }'
+```

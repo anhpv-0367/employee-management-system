@@ -22,6 +22,8 @@ type EmployeeRepository interface {
 	FindByID(ctx context.Context, id int64) (*models.Employee, error)
 	FindByDepartmentID(ctx context.Context, departmentID int64) ([]*models.Employee, error)
 	List(ctx context.Context, limit, offset int, departmentID *int64, keyword *string) ([]*models.Employee, int64, error)
+	Update(ctx context.Context, e *models.Employee) error
+	Delete(ctx context.Context, id int64) error
 }
 
 func (r *employeePostgresRepository) Create(ctx context.Context, e *models.Employee) error {
@@ -161,4 +163,36 @@ func (r *employeePostgresRepository) List(ctx context.Context, limit, offset int
 	}
 
 	return res, total, nil
+}
+
+func (r *employeePostgresRepository) Update(ctx context.Context, e *models.Employee) error {
+	var email sql.NullString
+	if e.Email != nil {
+		email = sql.NullString{String: *e.Email, Valid: true}
+	}
+
+	query := `UPDATE employees SET name = $1, email = $2, department_id = $3, age = $4, position = $5, salary = $6, updated_at = now() WHERE id = $7 RETURNING updated_at`
+	var updatedAt sql.NullTime
+	if err := r.db.QueryRowContext(ctx, query, e.Name, email, e.DepartmentID, e.Age, e.Position, e.Salary, e.ID).Scan(&updatedAt); err != nil {
+		return err
+	}
+	if updatedAt.Valid {
+		e.UpdatedAt = updatedAt.Time
+	}
+	return nil
+}
+
+func (r *employeePostgresRepository) Delete(ctx context.Context, id int64) error {
+	res, err := r.db.ExecContext(ctx, `DELETE FROM employees WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

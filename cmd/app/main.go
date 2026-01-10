@@ -54,8 +54,19 @@ func main() {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	})
 
-	// GET /employees/{id}
-	mux.HandleFunc("/employees/", employeeHandler.GetByID)
+	// /employees/{id}: GET, PUT, DELETE
+	mux.HandleFunc("/employees/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			employeeHandler.GetByID(w, r)
+		case http.MethodPut:
+			employeeHandler.UpdateEmployee(w, r)
+		case http.MethodDelete:
+			employeeHandler.DeleteEmployee(w, r)
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	log.Println("Employee Management System running at :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))

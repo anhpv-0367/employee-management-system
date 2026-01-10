@@ -1,15 +1,16 @@
 package handlers
 
 import (
-  "log"
-  "encoding/json"
-  "net/http"
-  "strconv"
-  "strings"
-  "time"
+	"log"
+	"encoding/json"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+	"database/sql"
 
-	"app/internal/models"
-	"app/internal/services"
+		"app/internal/models"
+		"app/internal/services"
 )
 
 type EmployeeHandler struct {
@@ -207,5 +208,102 @@ func (h *EmployeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *EmployeeHandler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	const prefix = "/employees/"
+	if !strings.HasPrefix(r.URL.Path, prefix) {
+		http.NotFound(w, r)
+		return
+	}
+	idStr := strings.TrimPrefix(r.URL.Path, prefix)
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+
+	var req struct {
+		Name         *string  `json:"name"`
+		Email        *string  `json:"email"`
+		DepartmentID *int64   `json:"departmentId"`
+		Age          *int     `json:"age"`
+		Position     *string  `json:"position"`
+		Salary       *float64 `json:"salary"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	existing, err := h.service.GetByID(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "employee not found")
+		return
+	}
+
+	if req.Name != nil {
+		existing.Name = *req.Name
+	}
+	if req.Email != nil {
+		existing.Email = req.Email
+	}
+	if req.DepartmentID != nil {
+		existing.DepartmentID = *req.DepartmentID
+	}
+	if req.Age != nil {
+		existing.Age = req.Age
+	}
+	if req.Position != nil {
+		existing.Position = req.Position
+	}
+	if req.Salary != nil {
+		existing.Salary = req.Salary
+	}
+
+	if err := h.service.Update(r.Context(), existing); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(existing)
+}
+
+func (h *EmployeeHandler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	const prefix = "/employees/"
+	if !strings.HasPrefix(r.URL.Path, prefix) {
+		http.NotFound(w, r)
+		return
+	}
+	idStr := strings.TrimPrefix(r.URL.Path, prefix)
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	if err := h.service.Delete(r.Context(), id); err != nil {
+		if err == sql.ErrNoRows {
+			writeError(w, http.StatusNotFound, "employee not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -41,3 +41,17 @@ func (s *EmployeeService) CreateEmployee(ctx context.Context, e *models.Employee
 	}
 	return s.repo.Create(ctx, e)
 }
+
+func (s *EmployeeService) Update(ctx context.Context, e *models.Employee) error {
+	if e.DepartmentID == 0 {
+		return errors.New("departmentId is required")
+	}
+	if _, err := s.deptRepo.FindByID(ctx, e.DepartmentID); err != nil {
+		return errors.New("department not found")
+	}
+	return s.repo.Update(ctx, e)
+}
+
+func (s *EmployeeService) Delete(ctx context.Context, id int64) error {
+	return s.repo.Delete(ctx, id)
+}
