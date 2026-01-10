@@ -17,6 +17,10 @@ func NewDepartmentService(repo repositories.DepartmentRepository) *DepartmentSer
 	}
 }
 
+func (s *DepartmentService) FindAll(ctx context.Context, limit, offset int) ([]*models.Department, int64, error) {
+	return s.repo.FindAll(ctx, limit, offset)
+}
+
 func (s *DepartmentService) Create(ctx context.Context, d *models.Department) error {
 	return s.repo.Create(ctx, d)
 }

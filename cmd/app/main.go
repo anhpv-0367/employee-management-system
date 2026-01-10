@@ -38,8 +38,18 @@ func main() {
 		fmt.Fprintln(w, "OK")
 	})
 
-	// POST /departments
-	mux.HandleFunc("/departments", deptHandler.CreateDepartment)
+	// /departments: GET=list, POST=create
+	mux.HandleFunc("/departments", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			deptHandler.ListDepartments(w, r)
+			return
+		}
+		if r.Method == http.MethodPost {
+			deptHandler.CreateDepartment(w, r)
+			return
+		}
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	})
 
 	// /employees: GET=list, POST=create
 	mux.HandleFunc("/employees", func(w http.ResponseWriter, r *http.Request) {

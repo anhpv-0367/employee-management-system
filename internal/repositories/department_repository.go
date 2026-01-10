@@ -19,7 +19,7 @@ func NewDepartmentRepository(db *sql.DB) DepartmentRepository {
 type DepartmentRepository interface {
 	Create(ctx context.Context, d *models.Department) error
 	FindByID(ctx context.Context, id int64) (*models.Department, error)
-	FindAll(ctx context.Context) ([]*models.Department, error)
+	FindAll(ctx context.Context, limit, offset int) ([]*models.Department, int64, error)
 }
 
 func (r *departmentPostgresRepository) Create(ctx context.Context, d *models.Department) error {
@@ -47,27 +47,30 @@ func (r *departmentPostgresRepository) FindByID(ctx context.Context, id int64) (
 	return &d, err
 }
 
-func (r *departmentPostgresRepository) FindAll(ctx context.Context) ([]*models.Department, error) {
-	query := `
-		SELECT id, name
-		FROM departments
-		ORDER BY id
-	`
+func (r *departmentPostgresRepository) FindAll(ctx context.Context, limit, offset int) ([]*models.Department, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM departments`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
 
-	rows, err := r.db.QueryContext(ctx, query)
+	query := `SELECT id, name, created_at, updated_at FROM departments ORDER BY id LIMIT $1 OFFSET $2`
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var departments []*models.Department
 	for rows.Next() {
 		var d models.Department
-		if err := rows.Scan(&d.ID, &d.Name); err != nil {
-			return nil, err
+		if err := rows.Scan(&d.ID, &d.Name, &d.CreatedAt, &d.UpdatedAt); err != nil {
+			return nil, 0, err
 		}
 		departments = append(departments, &d)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
 
-	return departments, nil
+	return departments, total, nil
 }

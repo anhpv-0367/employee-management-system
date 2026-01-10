@@ -1,3 +1,17 @@
+## Kiến thức chung
+
+### Flow request
+
+```
+client -> network layer -> middleware -> handlers (HTTP) -> services (business logic / transactions) + models -> repositories (persistence) -> database
+```
+
+handlers -> như kiểu controller bên ruby
+models -> Định nghĩa data, giống models ruby nhưng nhỏ hơn
+services -> Bussiness logic viết ở đây, call đến repositories
+repositories -> Định nghĩa interface, viết các function interface ở đây (giống các scope)
+
+
 ### Create file go.mod
 ```
 docker run --rm -v "$PWD":/app -w /app golang:1.22-alpine \
@@ -95,4 +109,10 @@ curl --location --request DELETE 'http://localhost:8080/employees/12' \
     "email": "b@example.com",
     "department_id": 1
   }'
+```
+
+- GET /departments
+
+```
+curl --location 'http://localhost:8080/departments?limit=1&offset=0'
 ```
