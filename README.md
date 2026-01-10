@@ -85,7 +85,7 @@ curl --location --request PUT 'http://localhost:8080/employees/11' \
   }'
 ```
 
-- GET /employees/:id
+- DELETE /employees/:id
 
 ```
 curl --location --request DELETE 'http://localhost:8080/employees/12' \
