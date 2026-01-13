@@ -122,3 +122,20 @@ curl --location 'http://localhost:8080/departments?limit=1&offset=0'
 ```
 curl --location 'http://localhost:8080/departments/1/employees?keyword=Van'
 ```
+
+- Export employees (JSON + CSV files tạo song song bằng goroutines)
+
+```
+# Export và lưu file trên server (cả JSON và CSV)
+# Trả về: {"jsonFile":"employees_xxx.json","csvFile":"employees_xxx.csv","exportDir":"."}
+curl -X POST 'http://localhost:8080/employees/export_csv'
+
+# Tải trực tiếp file CSV về máy
+curl -X POST 'http://localhost:8080/employees/export_csv?download=true&format=csv' -o employees.csv
+
+# Tải trực tiếp file JSON về máy
+curl -X POST 'http://localhost:8080/employees/export_csv?download=true&format=json' -o employees.json
+
+# Export với filter (limit, offset, departmentId, keyword)
+curl -X POST 'http://localhost:8080/employees/export_csv?limit=100&departmentId=1&download=true&format=json' -o filtered.json
+```

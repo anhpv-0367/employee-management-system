@@ -65,6 +65,14 @@ func main() {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	})
 
+	mux.HandleFunc("/employees/export_csv", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			employeeHandler.ExportCSV(w, r)
+			return
+		}
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	})
+
 	// GET /departments/{id}/employees -> reuse employeeHandler.ListEmployees with departmentId injected
 	mux.HandleFunc("/departments/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

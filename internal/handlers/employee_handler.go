@@ -8,9 +8,15 @@ import (
 	"strings"
 	"time"
 	"database/sql"
+	"os"
+	"encoding/csv"
+	"sync"
+	"fmt"
+	"path/filepath"
+	"bytes"
 
-		"app/internal/models"
-		"app/internal/services"
+	"app/internal/models"
+	"app/internal/services"
 )
 
 type EmployeeHandler struct {
@@ -305,5 +311,192 @@ func (h *EmployeeHandler) DeleteEmployee(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func employeeToCSVRow(e *models.Employee) []string {
+	age := ""
+	if e.Age != nil {
+		age = strconv.Itoa(*e.Age)
+	}
+	position := ""
+	if e.Position != nil {
+		position = *e.Position
+	}
+	email := ""
+	if e.Email != nil {
+		email = *e.Email
+	}
+	salary := ""
+	if e.Salary != nil {
+		salary = fmt.Sprintf("%v", *e.Salary)
+	}
+	return []string{
+		fmt.Sprintf("%d", e.ID),
+		e.Name,
+		email,
+		fmt.Sprintf("%d", e.DepartmentID),
+		age,
+		position,
+		salary,
+		e.CreatedAt.Format(time.RFC3339),
+		e.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+func writeCSV(wtr *csv.Writer, employees []*models.Employee) error {
+	header := []string{"id", "name", "email", "departmentId", "age", "position", "salary", "createdAt", "updatedAt"}
+	if err := wtr.Write(header); err != nil {
+		return err
+	}
+	for _, e := range employees {
+		if err := wtr.Write(employeeToCSVRow(e)); err != nil {
+			return err
+		}
+	}
+	wtr.Flush()
+	return nil
+}
+
+func (h *EmployeeHandler) ExportCSV(w http.ResponseWriter, r *http.Request) {
+	log.Println("ExportCSV handler called")
+
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	q := r.URL.Query()
+	limit := 10
+	offset := 0
+	if l := q.Get("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 {
+			limit = v
+		}
+	}
+	if o := q.Get("offset"); o != "" {
+		if v, err := strconv.Atoi(o); err == nil && v >= 0 {
+			offset = v
+		}
+	}
+
+	var deptID *int64
+	if d := q.Get("departmentId"); d != "" {
+		if v, err := strconv.ParseInt(d, 10, 64); err == nil {
+			deptID = &v
+		} else {
+			writeError(w, http.StatusBadRequest, "invalid departmentId")
+			return
+		}
+	}
+
+	var keyword *string
+	if k := q.Get("keyword"); k != "" {
+		keyword = &k
+	}
+
+	employees, _, err := h.service.List(r.Context(), limit, offset, deptID, keyword)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	download := q.Get("download") == "true"
+	format := q.Get("format")
+	if format == "" {
+		format = "csv"
+	}
+	ts := time.Now().Unix()
+	jsonFile := fmt.Sprintf("employees_%d.json", ts)
+	csvFile := fmt.Sprintf("employees_%d.csv", ts)
+	exportDir := os.Getenv("EXPORT_DIR")
+	if exportDir == "" {
+		exportDir = "."
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var csvBuf *bytes.Buffer
+	var jsonBuf *bytes.Buffer
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		data, err := json.MarshalIndent(employees, "", "  ")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if download && format == "json" {
+			mu.Lock()
+			jsonBuf = bytes.NewBuffer(data)
+			mu.Unlock()
+			return
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		f, err := os.Create(filepath.Join(exportDir, jsonFile))
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer f.Close()
+		f.Write(data)
+	}()
+
+	go func() {
+		defer wg.Done()
+		if download && format == "csv" {
+			buf := &bytes.Buffer{}
+			wtr := csv.NewWriter(buf)
+			if err := writeCSV(wtr, employees); err != nil {
+				log.Println(err)
+				return
+			}
+			mu.Lock()
+			csvBuf = buf
+			mu.Unlock()
+			return
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		f, err := os.Create(filepath.Join(exportDir, csvFile))
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer f.Close()
+		writeCSV(csv.NewWriter(f), employees)
+	}()
+
+	wg.Wait()
+
+	if download {
+		if format == "json" {
+			if jsonBuf == nil {
+				writeError(w, http.StatusInternalServerError, "json generation failed")
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Content-Disposition", "attachment; filename=\""+jsonFile+"\"")
+			http.ServeContent(w, r, jsonFile, time.Now(), bytes.NewReader(jsonBuf.Bytes()))
+			return
+		}
+		if csvBuf == nil {
+			writeError(w, http.StatusInternalServerError, "csv generation failed")
+			return
+		}
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+csvFile+"\"")
+		http.ServeContent(w, r, csvFile, time.Now(), bytes.NewReader(csvBuf.Bytes()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"jsonFile":  jsonFile,
+		"csvFile":   csvFile,
+		"exportDir": exportDir,
+	})
 }
 

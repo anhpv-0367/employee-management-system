@@ -1,0 +1,57 @@
+[
+  {
+    "ID": 16,
+    "Name": "Nguyen Van E1",
+    "Email": "E1@example.com",
+    "DepartmentID": 1,
+    "Age": null,
+    "Position": null,
+    "Salary": null,
+    "CreatedAt": "2026-01-10T09:00:56.126162Z",
+    "UpdatedAt": "2026-01-10T09:00:56.126162Z"
+  },
+  {
+    "ID": 11,
+    "Name": "Nguyen van fix",
+    "Email": "D@example.com",
+    "DepartmentID": 2,
+    "Age": 12,
+    "Position": "Leaderx",
+    "Salary": 12.3,
+    "CreatedAt": "2026-01-09T10:08:33.626564Z",
+    "UpdatedAt": "2026-01-10T09:43:48.830424Z"
+  },
+  {
+    "ID": 10,
+    "Name": "Nguyen Van C",
+    "Email": "C@example.com",
+    "DepartmentID": 1,
+    "Age": null,
+    "Position": null,
+    "Salary": null,
+    "CreatedAt": "2026-01-09T10:08:25.011218Z",
+    "UpdatedAt": "2026-01-09T10:08:25.011218Z"
+  },
+  {
+    "ID": 9,
+    "Name": "Nguyen Van B",
+    "Email": "B@example.com",
+    "DepartmentID": 1,
+    "Age": null,
+    "Position": null,
+    "Salary": null,
+    "CreatedAt": "2026-01-09T10:07:48.43967Z",
+    "UpdatedAt": "2026-01-09T10:07:48.43967Z"
+  },
+  {
+    "ID": 2,
+    "Name": "Nguyen Van A",
+    "Email": "a@example.com",
+    "DepartmentID": 1,
+    "Age": null,
+    "Position": null,
+    "Salary": null,
+    "CreatedAt": "2026-01-09T04:33:31.914457Z",
+    "UpdatedAt": "2026-01-09T04:33:31.914457Z"
+  }
+]
